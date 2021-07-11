@@ -1,4 +1,3 @@
-
 % perform a single GMLVQ training process
 % optional visualization of training curves and gmlvq system
 
@@ -18,7 +17,6 @@ function [gmlvq_system, training_curves, param_set]= ...
 % e.g. plbl=[1,1,2,2,3] for 5 prototypes with labels 1,2,3  
 % totalsteps: number of batch gradient steps to be performed
 
-
 if (nargin<4||isempty(plbl)); plbl=[1:length(unique(lbl))]; 
 display('default: one prototype per class'); 
 end;
@@ -34,7 +32,6 @@ display('number of training steps'); totalsteps
                                         set_parameters(fvec); 
 etam=etam0;  % initial step size matrix
 etap=etap0;  % intitial step size prototypes
-               
                                     
 % showplots (0 or 1): plot learning curves etc? 
 % doztr (0 or 1): perform z-score transformation based on training set
@@ -63,8 +60,7 @@ close all;   % close all figures
 % reproducible random numbers
  rng('default'); 
  rngseed=291024;
- rng(rngseed); 
-
+ rng(rngseed);
 
 nfv = size(fvec,1);          % number of feature vectors in training set
 ndim = size(fvec,2);         % dimension of feature vectors
@@ -74,8 +70,6 @@ nprots = length(plbl);       % total number of prototypes
 te=zeros(totalsteps+1,1);      % define total error
 cf=te; auc=te;               % define cost function and AUC(ROC)
 cw=zeros(totalsteps+1,ncls);   % define class-wise errors
-stepsizem= te;               % stepsize matrix in the course of training
-stepsizep= te;               % stepsize prototypes in the course ...
 
       
       mf=zeros(1,ndim);      % initialize feature means
@@ -87,8 +81,7 @@ end;
 
 % initialize prototypes and omega 
   [proti,omi] =  set_initial(fvec,lbl,plbl,mode,rndinit);
-  prot=proti;  om =omi;   % initial values   
- 
+  prot=proti;  om =omi;   % initial values
   
 % copies of prototypes and omegas stored in protcop and omcop
 % for the adaptive step size procedure 
@@ -98,14 +91,8 @@ end;
   % calculate initial values for learning curves
   [costf,~,marg,score] = compute_costs(fvec,lbl,prot,plbl,om,mu);  
        te(1) = sum(marg>0)/nfv;
-       cf(1) = costf; 
-       stepsizem(1)=etam;
-       stepsizep(1)=etap; 
-       
-  [tpr,fpr,auroc,thresholds] = compute_roc(lbl>1,score);
-       auc(1)=auroc; 
- 
-       
+       cf(1) = costf;
+
   % perform the first ncop steps of gradient descent
   for inistep=1: ncop;
       % actual batch gradient step
@@ -118,24 +105,14 @@ end;
        [costf,~,marg,score] = compute_costs(fvec,lbl,prot,plbl,om,mu);  
        te(inistep+1) = sum(marg>0)/nfv;
        cf(inistep+1) = costf; 
-       stepsizem(inistep+1)=etam; 
-       stepsizep(inistep+1)=etap;
+
        % compute training set errors and cost function values
        for icls=1:ncls;
           % compute class-wise errors (positive margin = error) 
           cw(inistep+1,icls) = sum(marg(lbl==icls)>0)/sum(lbl==icls); 
        end;
-       
-       % training set roc with respect to class 1 versus all others only
-      
-       [tpr,fpr,auroc,thresholds] = compute_roc(lbl>1,score);
-       auc(inistep+1)=auroc;
-  end; 
-  
-  % compute cost functions, crisp labels, margins and scores
-  % scores with respect to class 1 (negative) or all others (positive)
-  [~,~,~,score]    = compute_costs(fvec,lbl,prot,plbl,om,mu); 
-   
+  end;
+
 for jstep=(ncop+1):totalsteps;    
  % calculate mean positions over latest steps
  protmean = squeeze(mean(protcop,1)); 
@@ -154,10 +131,7 @@ ombefore=om;
 protbefore=prot;
  
  % perform next step and compute costs etc.
-[prot,om]= do_batchstep (fvec,lbl,prot,plbl,om,etap,etam,mu,mode);  
-    
-[costf,~,~,score] = compute_costs(fvec,lbl,prot,plbl,om,mu); 
- 
+[prot,om]= do_batchstep (fvec,lbl,prot,plbl,om,etap,etam,mu,mode);
 
 % by default, step sizes are increased in every step
  etam=etam*incfac; % (small) increase of step sizes
@@ -191,8 +165,7 @@ protbefore=prot;
  
  % determine training and test set performances 
  % here: costfunction without penalty term! 
-[costf0,~,marg,score] = compute_costs(fvec,lbl,prot,plbl,om,0); 
-
+[costf0,~,marg,score] = compute_costs(fvec,lbl,prot,plbl,om,0);
  
  % compute total and class-wise training set errors
  te(jstep+1) = sum(marg>0)/nfv;
@@ -200,16 +173,6 @@ protbefore=prot;
  for icls=1:ncls;
      cw(jstep+1,icls) = sum(marg(lbl==icls)>0)/sum(lbl==icls); 
  end;
- stepsizem(jstep+1)=etam;
- stepsizep(jstep+1)=etap;
- 
- % ROC with respect to class 1 (negative) vs. all others (positive)
- binlbl= lbl>1; 
- [tpr,fpr,auroc,thresholds] = compute_roc(binlbl,score);
- auc(jstep+1)=auroc; 
- 
-%  figure(10);plot(fpr,tpr);pause(1)
- 
  
 end;   % totalsteps training steps performed
 
@@ -232,104 +195,3 @@ param_set = struct('totalsteps',totalsteps,'doztr',...
           'etam0',etam0,'etap0',etap0,'etamfin',etam,'etapfin',etap,...
           'mu',mu,'decfac',decfac,'infac',incfac,'ncop',ncop,...
           'rngseed',rngseed);
-                                        
-
-% learning curves and system visualization, only if showplot = 1                      
-if(showplots==1)
-
-
-scrsz = get(0,'ScreenSize');
-figure('Position',[1 scrsz(4)*8/10 scrsz(3)*4/10 scrsz(4)*8/10])   
-    
- % figure(1);                                       % learning curves 
- msize=15;   % size of symbols
- 
- totl=totalsteps+1;
- subplot(3,2,1);  % plot glvq cost fucntion vs. steps
-    plot([1:totl],cf,'b.','MarkerSize',msize); hold on;
-    
-   title('glvq costs per example w/o penalty term ',...
-       'FontName','LucidaSans', 'FontWeight','bold'); 
-   xlabel('gradient steps');
-   axis([0 totl -1 1]); axis 'auto y';
- 
- subplot(3,2,2);  % plot total training error vs. steps
-   plot(1:totl,te,'r.','Markersize',msize); hold on;
-   
-   title('total training error',...
-       'FontName','LucidaSans', 'FontWeight','bold'); 
-   xlabel('gradient steps'); 
-   axis([0 totl 0 1]); axis 'auto y';
-   
-   subplot(3,2,3); % plot the class-wise errors vs. steps
-       plot(1,cw(1,:,:),'.','MarkerSize',msize+10); hold on;
-       plot(1,cw(1,:,:),'w.','MarkerSize',msize+10);
-       legend(num2str([1:ncls]'),'Location','NorthEast');
-       plot(1:totl,cw,'.','MarkerSize',msize);    
-  
-   title('class-wise training errors',...
-       'FontName','LucidaSans', 'FontWeight','bold'); 
-   xlabel('gradient steps'); 
-   axis([0 totl 0 1]);  axis 'auto y';
-   
-   
- subplot(3,2,4);   % plot AUC (ROC) vs. steps
-   plot(1:totl,auc,'k.','MarkerSize',msize); 
-   axis([ 0 totl min(0.9,min(auc)) 1.05 ]); 
-   title('AUC(ROC), class 1 vs. all others',...
-       'FontName','LucidaSans', 'FontWeight','bold');
- 
-   
-   subplot(3,2,5);  % plot glvq cost fucntion vs. steps
-    plot([1:totl],stepsizep,'b.','MarkerSize',msize); hold on;
-    plot([1:totl],stepsizem,'r.','Markersize',msize);
-   title('stepsizes',...
-       'FontName','LucidaSans', 'FontWeight','bold'); 
-   xlabel('gradient steps');
-   legend('prototype','relevances','Location','NorthEast');
-   axis([0 totl -1 1]); axis 'auto y';
-   
-   
- figure(2);             % display the ROC curve of the final classifier 
-   fprnpc = fpr(thresholds==0.5); % false positive of NPC
-   tprnpc = tpr(thresholds==0.5); % true  positive of NPC
-   
-   plot(fpr,tpr,'-'); hold on;
-   plot(fprnpc,tprnpc,'ko','MarkerSize',10,'MarkerFaceColor','b');
-   axis square;
-   xlabel('false positive rate');
-   ylabel('true positive rate');
-   title('Training ROC, class 1 (neg.) vs. all others (pos.)',...
-       'FontName','LucidaSans', 'FontWeight','bold'); 
-   legend(['AUC = ',num2str(auc(jstep))],'NPC', 'Location','SouthEast');
-   plot([0 1],[0 1],'k:'); 
-   hold off;
- 
-
-  figure(3);                   % visualize prototyeps and lambda matrix 
-  
-  display_gmlvq(prot,lambda,plbl,ndim); 
-    
-%   figure(4);         % visualize data set in terms of projections on the
-%                      % leading eigenvectors of Lambda
-%   visu_2d(lambda,prot,fvec,lbl,plbl,1); axis tight; axis square;
-%   title('2d-visualization of the data set',...
-%         'FontName','LucidaSans', 'FontWeight','bold');
-  end;
-
-
-                     
-                                 
-                     
-                     
-                    
-                     
-                          
-                         
-                     
-                     
-   
-                     
-                     
-   
-
