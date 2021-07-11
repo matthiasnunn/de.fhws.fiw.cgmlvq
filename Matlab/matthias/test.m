@@ -61,25 +61,6 @@ my_write( 'test_compute_costs_mu1_marg.csv', marg );
 my_write( 'test_compute_costs_mu1_score.csv', score );
 
 
-% ===========
-% compute_roc
-% ===========
-
-rng( 'default' ); 
-rng( 291024 );
-
-[proti, omi] = set_initial( X_train, y_train, unique(y_train)', 1, false );
-
-[~, ~, ~, score] = compute_costs( X_train, y_train, proti, unique(y_train)', omi, 0 );
-
-[tpr, fpr, auroc, thresh] = compute_roc( y_train>1, score );
-
-my_write( 'test_compute_roc_tpr.csv', tpr );
-my_write( 'test_compute_roc_fpr.csv', fpr );
-my_write( 'test_compute_roc_auroc.csv', auroc );
-my_write( 'test_compute_roc_thresh.csv', thresh );
-
-
 % ============
 % do_batchstep
 % ============
