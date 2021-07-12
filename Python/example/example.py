@@ -8,7 +8,7 @@ import os
 
 data = []
 
-csv_file = open( os.path.join(os.getcwd(), "data sets/iris.csv") )
+csv_file = open( os.path.join(os.getcwd(), "Python\\data sets\\iris.csv") )
 
 csv_reader = csv.reader( csv_file, delimiter=',' )
 
