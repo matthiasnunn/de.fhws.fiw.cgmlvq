@@ -63,24 +63,22 @@ class Test_CGMLVQ( unittest.TestCase ):
 
         w, omega = cgmlvq._CGMLVQ__get_initial( self.X_train, self.y_train, np.unique(self.y_train) )
 
-        costf, crout, marg, score = cgmlvq._CGMLVQ__compute_costs( self.X_train, self.y_train, w, np.unique(self.y_train), omega, 0 )
+        costf, crout, marg = cgmlvq._CGMLVQ__compute_costs( self.X_train, self.y_train, w, np.unique(self.y_train), omega, 0 )
 
         np.testing.assert_array_almost_equal( costf, self.load_data('test_compute_costs_costf.csv')[0] )
         np.testing.assert_array_almost_equal( crout, self.load_data('test_compute_costs_crout.csv')    )
         np.testing.assert_array_almost_equal( marg,  self.load_data('test_compute_costs_marg.csv')     )
-        np.testing.assert_array_almost_equal( score, self.load_data('test_compute_costs_score.csv')    )
 
 
         cgmlvq.set_params( mu=1 )
 
         w, omega = cgmlvq._CGMLVQ__get_initial( self.X_train, self.y_train, np.unique(self.y_train) )
 
-        costf, crout, marg, score = cgmlvq._CGMLVQ__compute_costs( self.X_train, self.y_train, w, np.unique(self.y_train), omega, 1 )
+        costf, crout, marg = cgmlvq._CGMLVQ__compute_costs( self.X_train, self.y_train, w, np.unique(self.y_train), omega, 1 )
 
         np.testing.assert_array_almost_equal( costf, self.load_data('test_compute_costs_mu1_costf.csv')[0] )
         np.testing.assert_array_almost_equal( crout, self.load_data('test_compute_costs_mu1_crout.csv')    )
         np.testing.assert_array_almost_equal( marg,  self.load_data('test_compute_costs_mu1_marg.csv')     )
-        np.testing.assert_array_almost_equal( score, self.load_data('test_compute_costs_mu1_score.csv')    )
 
 
     def test_compute_euclid( self ):

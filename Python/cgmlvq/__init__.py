@@ -253,7 +253,7 @@ class CGMLVQ:
                 X[i, :] = (X[i, :] - mf) / st
 
         # cost function can be computed without penalty term for margins/score
-        _, crisp, _, _ = self.__compute_costs( X, y, w, wlbl, omat, 0 )
+        _, crisp, _ = self.__compute_costs( X, y, w, wlbl, omat, 0 )
 
         return crisp
 
@@ -276,7 +276,6 @@ class CGMLVQ:
         costf : glvq-costs per example
         crout : crisp classifier outputs
         marg : margins of classifying the examples
-        score : distance based "scores"
         """
 
         m = X.shape[0]
@@ -284,7 +283,6 @@ class CGMLVQ:
 
         costf = 0
         marg  = np.zeros( (1, m) )
-        score = np.zeros( (1, m) )
         crout = np.zeros( (1, m) )
 
         omega = omega / np.sqrt(sum(sum(omega * omega)))  # normalized omat
@@ -316,12 +314,6 @@ class CGMLVQ:
 
             marg[0, i] = (dJ-dK) / (dJ+dK)  # gmlvq margin of example i
 
-            # un-normalized difference of distances
-            if yi == 1:
-                score[0, i] = dK - dJ
-            else:
-                score[0, i] = dJ - dK
-
             # the class label according to nearest prototype
             crout[0, i] = wlbl[jwin] * (dJ <= dK) + wlbl[kwin] * (dJ > dK)
 
@@ -329,7 +321,7 @@ class CGMLVQ:
         if mu > 0:
             costf = costf - mu / 2 * np.log(np.linalg.det(omega @ omega.conj().T)) / m
 
-        return costf, crout, marg, score
+        return costf, crout, marg
 
 
     def __compute_euclid( self, X, w, omega ):
@@ -621,7 +613,7 @@ class CGMLVQ:
         omega_copy = np.zeros( (omega.shape[1], ncop, omega.shape[0]), dtype=np.cdouble )
 
         # calculate initial values for learning curves
-        costf, _, marg, _ = self.__compute_costs( X, y, w, wlbl, omega, self.mu )
+        costf, _, marg = self.__compute_costs( X, y, w, wlbl, omega, self.mu )
 
         te[0] = np.sum(marg>0) / m
         cf[0] = costf
@@ -635,7 +627,7 @@ class CGMLVQ:
             omega_copy[:,i,:] = omega.T
 
             # determine and save training set performances
-            costf, _, marg, _ = self.__compute_costs( X, y, w, wlbl, omega, self.mu )
+            costf, _, marg = self.__compute_costs( X, y, w, wlbl, omega, self.mu )
 
             te[i+1] = np.sum(marg>0) / m
             cf[i+1] = costf
@@ -655,8 +647,8 @@ class CGMLVQ:
             omega_mean = omega_mean / np.sqrt(np.sum(np.sum(np.abs(omega_mean)**2)))
 
             # compute cost functions for mean prototypes and mean matrix
-            costmp, _, _, _ = self.__compute_costs( X, y, w_mean, wlbl, omega,      0       )
-            costmm, _, _, _ = self.__compute_costs( X, y, w,      wlbl, omega_mean, self.mu )
+            costmp, _, _ = self.__compute_costs( X, y, w_mean, wlbl, omega,      0       )
+            costmm, _, _ = self.__compute_costs( X, y, w,      wlbl, omega_mean, self.mu )
 
             # remember old positions for Papari procedure
             ombefore = omega.copy()
@@ -671,8 +663,8 @@ class CGMLVQ:
 
             # costfunction values to compare with for Papari procedure
             # evaluated w.r.t. changing only matrix or prototype
-            costfp, _, _, _ = self.__compute_costs( X, y, w,          wlbl, ombefore, 0       )
-            costfm, _, _, _ = self.__compute_costs( X, y, protbefore, wlbl, omega,    self.mu )
+            costfp, _, _ = self.__compute_costs( X, y, w,          wlbl, ombefore, 0       )
+            costfm, _, _ = self.__compute_costs( X, y, protbefore, wlbl, omega,    self.mu )
 
             # heuristic extension of Papari procedure
             # treats matrix and prototype step sizes separately
@@ -697,7 +689,7 @@ class CGMLVQ:
 
             # determine training and test set performances
             # here: costfunction without penalty term!
-            costf0, _, marg, _ = self.__compute_costs( X, y, w, wlbl, omega, 0 )
+            costf0, _, marg = self.__compute_costs( X, y, w, wlbl, omega, 0 )
 
             # compute total and class-wise training set errors
             te[i+1] = np.sum(marg>0) / m
