@@ -273,15 +273,15 @@ class CGMLVQ:
 
         Returns
         -------
-        costf : glvq-costs per example
-        crout : crisp classifier outputs
+        S : glvq-costs per example (cost function)
+        crout : crisp classifier outputs (labels)
         marg : margins of classifying the examples
         """
 
         m = X.shape[0]
         c = len( wlbl )
 
-        costf = 0
+        S = 0
         marg  = np.zeros( (1, m) )
         crout = np.zeros( (1, m) )
 
@@ -303,25 +303,25 @@ class CGMLVQ:
             correct   = np.where( np.array([wlbl]) == yi )[1]  # all correct prototype indices
             incorrect = np.where( np.array([wlbl]) != yi )[1]  # all wrong   prototype indices
 
-            dJ, JJ = d[correct].min(0), d[correct].argmin(0)      # correct winner
-            dK, KK = d[incorrect].min(0), d[incorrect].argmin(0)  # wrong winner
+            d1, d1i = d[correct].min(0), d[correct].argmin(0)      # correct winner
+            d2, d2i = d[incorrect].min(0), d[incorrect].argmin(0)  # wrong winner
 
             # winner indices
-            jwin = correct[JJ][0]
-            kwin = incorrect[KK][0]
+            w1i = correct[d1i][0]
+            w2i = incorrect[d2i][0]
 
-            costf = costf + (dJ-dK) / (dJ+dK) / m
+            S = S + (d1-d2) / (d1+d2) / m
 
-            marg[0, i] = (dJ-dK) / (dJ+dK)  # gmlvq margin of example i
+            marg[0, i] = (d1-d2) / (d1+d2)  # gmlvq margin of example i
 
             # the class label according to nearest prototype
-            crout[0, i] = wlbl[jwin] * (dJ <= dK) + wlbl[kwin] * (dJ > dK)
+            crout[0, i] = wlbl[w1i] * (d1 <= d2) + wlbl[w2i] * (d1 > d2)
 
         # add penalty term
         if mu > 0:
-            costf = costf - mu / 2 * np.log(np.linalg.det(omega @ omega.conj().T)) / m
+            S = S - mu / 2 * np.log(np.linalg.det(omega @ omega.conj().T)) / m
 
-        return costf, crout, marg
+        return S, crout, marg
 
 
     def __compute_euclid( self, X, w, omega ):
@@ -383,34 +383,34 @@ class CGMLVQ:
             correct   = np.where( np.array([wlbl]) == yi )[1]  # all correct prototype indices
             incorrect = np.where( np.array([wlbl]) != yi )[1]  # all wrong   prototype indices
 
-            dJ, JJ = d[correct].min(0), d[correct].argmin(0)      # correct winner
-            dK, KK = d[incorrect].min(0), d[incorrect].argmin(0)  # wrong winner
+            d1, d1i = d[correct].min(0), d[correct].argmin(0)      # correct winner
+            d2, d2i = d[incorrect].min(0), d[incorrect].argmin(0)  # wrong winner
 
             # winner indices
-            jwin = correct[JJ][0]
-            kwin = incorrect[KK][0]
+            w1i = correct[d1i][0]
+            w2i = incorrect[d2i][0]
 
             # winning prototypes
-            wJ = w[jwin,:]
-            wK = w[kwin,:]
+            w1 = w[w1i,:]
+            w2 = w[w2i,:]
+
+            t = (d1 + d2)**2  # denominator of prefactor
 
             # GMLVQ prototype update for one example Xi
-            DJ = np.array([ Xi - wJ ]).T  # displacement vectors
-            DK = np.array([ Xi - wK ]).T  # displacement vectors
+            t1 = np.array([ Xi - w1 ]).T  # displacement vectors
+            t2 = np.array([ Xi - w2 ]).T  # displacement vectors
 
-            norm_factor = (dJ + dK)**2  # denominator of prefactor
-
-            dwJ = -(dK/norm_factor) * lambdaa @ DJ  # change of correct winner
-            dwK =  (dJ/norm_factor) * lambdaa @ DK  # change of incorrect winner
+            dw1 = -(d2/t) * lambdaa @ t1  # change of correct winner
+            dw2 =  (d1/t) * lambdaa @ t2  # change of incorrect winner
 
             # matrix update, single (global) matrix omega for one example
-            f1 = ( dK/norm_factor) * (omega@DJ) @ DJ.conj().T
-            f2 = (-dJ/norm_factor) * (omega@DK) @ DK.conj().T
+            w1 = ( d2/t) * (omega@t1) @ t1.conj().T
+            w2 = (-d1/t) * (omega@t2) @ t2.conj().T
 
             # negative gradient update added up over examples
-            chp[jwin,:] = chp[jwin,:] - dwJ.conj().T  # correct   winner summed update
-            chp[kwin,:] = chp[kwin,:] - dwK.conj().T  # incorrect winner summed update
-            chm = chm - (f1 + f2)                     # matrix summed update
+            chp[w1i,:] = chp[w1i,:] - dw1.conj().T  # correct   winner summed update
+            chp[w2i,:] = chp[w2i,:] - dw2.conj().T  # incorrect winner summed update
+            chm = chm - (w1 + w2)                   # matrix summed update
 
         # singularity control: add derivative of penalty term times mu
         if self.mu > 0:
