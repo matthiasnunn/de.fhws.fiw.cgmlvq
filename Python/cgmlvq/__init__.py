@@ -597,9 +597,10 @@ class CGMLVQ:
         m = X.shape[0]
         c = len( np.unique(wlbl) )
 
-        te = np.zeros( (self.totalsteps+1, 1) )  # define total error
-        cf = np.zeros( (self.totalsteps+1, 1) )  # define cost function
-        cw = np.zeros( (self.totalsteps+1, c) )  # define class-wise errors
+        # comment out for cost function
+        # te = np.zeros( (self.totalsteps+1, 1) )  # define total error
+        # cf = np.zeros( (self.totalsteps+1, 1) )  # define cost function
+        # cw = np.zeros( (self.totalsteps+1, c) )  # define class-wise errors
 
         if self.doztr:
             X, mf, st = self.__do_zscore( X.copy() )  # perform z-score transformation
@@ -613,10 +614,10 @@ class CGMLVQ:
         omega_copy = np.zeros( (omega.shape[1], ncop, omega.shape[0]), dtype=np.cdouble )
 
         # calculate initial values for learning curves
-        costf, _, marg = self.__compute_costs( X, y, w, wlbl, omega, self.mu )
+        # costf, _, marg = self.__compute_costs( X, y, w, wlbl, omega, self.mu )
 
-        te[0] = np.sum(marg>0) / m
-        cf[0] = costf
+        # te[0] = np.sum(marg>0) / m
+        # cf[0] = costf
 
         # perform the first ncop init steps of gradient descent
         for i in range( 0, ncop ):
@@ -627,15 +628,15 @@ class CGMLVQ:
             omega_copy[:,i,:] = omega.T
 
             # determine and save training set performances
-            costf, _, marg = self.__compute_costs( X, y, w, wlbl, omega, self.mu )
+            # costf, _, marg = self.__compute_costs( X, y, w, wlbl, omega, self.mu )
 
-            te[i+1] = np.sum(marg>0) / m
-            cf[i+1] = costf
+            # te[i+1] = np.sum(marg>0) / m
+            # cf[i+1] = costf
 
             # compute training set errors and cost function values
-            for j in range( 1, c+1 ):  # starting with 1 because of the labels
-                # compute class-wise errors (positive margin = error)
-                cw[i+1, j-1] = np.sum(marg[0, np.where(y == j)[0]] > 0) / np.sum(y == j)
+            # for j in range( 1, c+1 ):  # starting with 1 because of the labels
+            #     # compute class-wise errors (positive margin = error)
+            #     cw[i+1, j-1] = np.sum(marg[0, np.where(y == j)[0]] > 0) / np.sum(y == j)
 
         # perform totalsteps training steps
         for i in range( ncop, self.totalsteps ):
@@ -688,21 +689,17 @@ class CGMLVQ:
             omega_copy[:,ncop-1,:] = omega.T
 
             # determine training and test set performances
-            # here: costfunction without penalty term!
-            costf0, _, marg = self.__compute_costs( X, y, w, wlbl, omega, 0 )
+            # here: cost function without penalty term!
+            # costf0, _, marg = self.__compute_costs( X, y, w, wlbl, omega, 0 )
 
             # compute total and class-wise training set errors
-            te[i+1] = np.sum(marg>0) / m
-            cf[i+1] = costf0
+            # te[i+1] = np.sum(marg>0) / m
+            # cf[i+1] = costf0
 
-            for j in range( 1, c+1 ):
-                cw[i+1, j-1] = np.sum(marg[0, np.where(y == j)[0]] > 0) / np.sum(y == j)
+            # for j in range( 1, c+1 ):
+            #     cw[i+1, j-1] = np.sum(marg[0, np.where(y == j)[0]] > 0) / np.sum(y == j)
 
         lambdaa = omega.conj().T @ omega  # actual relevance matrix
 
-        # if the data was z transformed: the inverse prototypes
-        # if self.doztr:
-        #     wInverse = self.__do_inversezscore( w.copy(), mf, st )
-
         self.gmlvq_system = { 'w': w, 'lambda': lambdaa, 'wlbl': wlbl, 'mean_features': mf, 'std_features': st }
-        self.training_curves = { 'costs': cf, 'train_error': te, 'class_wise': cw }
+        # self.training_curves = { 'costs': cf, 'train_error': te, 'class_wise': cw }

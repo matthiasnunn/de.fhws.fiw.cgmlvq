@@ -1,7 +1,7 @@
 % perform a single GMLVQ training process
 % optional visualization of training curves and gmlvq system
 
-function [gmlvq_system, training_curves, param_set]= ...
+function [gmlvq_system]= ...
    run_single(fvec,lbl,totalsteps,plbl)    
  
 % gmlvq with global matrix only, square Omega, potentially diagonal
@@ -67,9 +67,10 @@ ndim = size(fvec,2);         % dimension of feature vectors
 ncls = length(unique(lbl));  % number of classes 
 nprots = length(plbl);       % total number of prototypes
 
-te=zeros(totalsteps+1,1);      % define total error
-cf=te; auc=te;               % define cost function and AUC(ROC)
-cw=zeros(totalsteps+1,ncls);   % define class-wise errors
+% comment out for cost function
+% te=zeros(totalsteps+1,1);      % define total error
+% cf=te; auc=te;               % define cost function and AUC(ROC)
+% cw=zeros(totalsteps+1,ncls);   % define class-wise errors
 
       
       mf=zeros(1,ndim);      % initialize feature means
@@ -89,9 +90,9 @@ end;
   omcop   = zeros(ncop,size(om,1) , size(om,2) );
 
   % calculate initial values for learning curves
-  [costf,~,marg,score] = compute_costs(fvec,lbl,prot,plbl,om,mu);  
-       te(1) = sum(marg>0)/nfv;
-       cf(1) = costf;
+  % [costf,~,marg,score] = compute_costs(fvec,lbl,prot,plbl,om,mu);
+  %     te(1) = sum(marg>0)/nfv;
+  %     cf(1) = costf;
 
   % perform the first ncop steps of gradient descent
   for inistep=1: ncop;
@@ -102,15 +103,15 @@ end;
       omcop  (inistep,:,:)= om;
      
       % determine and save training set performances 
-       [costf,~,marg,score] = compute_costs(fvec,lbl,prot,plbl,om,mu);  
-       te(inistep+1) = sum(marg>0)/nfv;
-       cf(inistep+1) = costf; 
+      % [costf,~,marg,score] = compute_costs(fvec,lbl,prot,plbl,om,mu);
+      % te(inistep+1) = sum(marg>0)/nfv;
+      % cf(inistep+1) = costf;
 
        % compute training set errors and cost function values
-       for icls=1:ncls;
-          % compute class-wise errors (positive margin = error) 
-          cw(inistep+1,icls) = sum(marg(lbl==icls)>0)/sum(lbl==icls); 
-       end;
+       % for icls=1:ncls;
+       %   % compute class-wise errors (positive margin = error)
+       %   cw(inistep+1,icls) = sum(marg(lbl==icls)>0)/sum(lbl==icls);
+       % end;
   end;
 
 for jstep=(ncop+1):totalsteps;    
@@ -165,33 +166,33 @@ protbefore=prot;
  
  % determine training and test set performances 
  % here: costfunction without penalty term! 
-[costf0,~,marg,score] = compute_costs(fvec,lbl,prot,plbl,om,0);
+% [costf0,~,marg,score] = compute_costs(fvec,lbl,prot,plbl,om,0);
  
  % compute total and class-wise training set errors
- te(jstep+1) = sum(marg>0)/nfv;
- cf(jstep+1) = costf0; 
- for icls=1:ncls;
-     cw(jstep+1,icls) = sum(marg(lbl==icls)>0)/sum(lbl==icls); 
- end;
+ % te(jstep+1) = sum(marg>0)/nfv;
+ % cf(jstep+1) = costf0;
+ % for icls=1:ncls;
+ %     cw(jstep+1,icls) = sum(marg(lbl==icls)>0)/sum(lbl==icls);
+ % end;
  
 end;   % totalsteps training steps performed
 
 %if the data was z transformed then also save the inverse prototypes,
 %actually it is not necessary since the mf and st are returned.
-if doztr == 1
-    protsInv = do_inversezscore(prot, mf, st);
-else
-    protsInv = prot;
-end
+%if doztr == 1
+%    protsInv = do_inversezscore(prot, mf, st);
+%else
+     protsInv = prot;
+%end
 
 lambda=om'*om;   % actual relevance matrix
 % define structures corresponding to the trained system and training curves
 gmlvq_system =    struct('protos',prot, 'protosInv',protsInv,'lambda',lambda,'plbl',plbl,...
-                         'mean_features',mf,'std_features',st); 
-training_curves = struct('costs',cf,'train_error',te,...
-                         'class_wise',cw,'auroc',auc); 
-param_set = struct('totalsteps',totalsteps,'doztr',...
-          doztr,'mode',mode,'rndinit',rndinit,...
-          'etam0',etam0,'etap0',etap0,'etamfin',etam,'etapfin',etap,...
-          'mu',mu,'decfac',decfac,'infac',incfac,'ncop',ncop,...
-          'rngseed',rngseed);
+                         'mean_features',mf,'std_features',st);
+% training_curves = struct('costs',cf,'train_error',te,...
+%                          'class_wise',cw,'auroc',auc);
+% param_set = struct('totalsteps',totalsteps,'doztr',...
+%           doztr,'mode',mode,'rndinit',rndinit,...
+%           'etam0',etam0,'etap0',etap0,'etamfin',etam,'etapfin',etap,...
+%           'mu',mu,'decfac',decfac,'infac',incfac,'ncop',ncop,...
+%           'rngseed',rngseed);
